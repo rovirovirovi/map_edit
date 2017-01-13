@@ -1,12 +1,3 @@
-[[
-#   map_edit
-#
-#   Copyright (C) 2016-2017 Rosca Valentin
-#
-#   This project is free software; you can redistribute it and/or modify it
-#   under the terms of the MIT license. See LICENSE.md for details.
-]]
-
 require "camera"
 
 
@@ -35,15 +26,30 @@ function tileManager.create(world)
 	self:addButton(1)
 	self:addButton(2)
 	self:addButton(3)
+
+	--[[
+		tool 1 = tile pen
+		tool 2 = collision drawing
+		tool 3 = remove tile
+		tool 4 = remove collision
+	]]
+	self.selectedTool = 1 
+
 	return self
 end
 
 function tileManager:update(dt)
-	if love.keyboard.isDown("q") then
-		self.selectedTile = 1
+	if love.keyboard.isDown("1") then
+		self.selectedTool = 1
 	end
-	if love.keyboard.isDown("e") then
-		self.selectedTile = 2
+	if love.keyboard.isDown("2") then
+		self.selectedTool = 2
+	end
+	if love.keyboard.isDown("3") then
+		self.selectedTool = 3
+	end
+	if love.keyboard.isDown("4") then
+		self.selectedTool = 4
 	end
 	
 	if not self.pressedSave and love.keyboard.isDown("b") then
@@ -66,48 +72,67 @@ function tileManager:update(dt)
 
 	end
 
-	if love.mouse.isDown("l") and not self.isDrawing then
-		self.startX = math.floor(camera:getMouseX() / 16)
-		self.startX = self.startX * 16
-		self.startY = math.floor(camera:getMouseY() / 16)
-		self.startY = self.startY * 16
-		self.isDrawing = true
+	if self.selectedTool == 1 then
+
+		if love.mouse.isDown("l") then
+			local clickedButton = self:checkClick()
+			if not clickedButton then
+				local x, y
+				x =  math.floor(camera:getMouseX() / 16)
+				x = x * 16
+				y = math.floor(camera:getMouseY() / 16)
+				y = y * 16
+				self:addTile(x, y, self.selectedTile)
+			end
+		end
 	end
-	if not love.mouse.isDown("l") and self.isDrawing then
-		self.endX = math.floor(camera:getMouseX() / 16)
-		self.endX = self.endX * 16
-		self.endY = math.floor(camera:getMouseY() / 16)
-		self.endY = self.endY * 16
+
+	if self.selectedTool == 2 then
+		if love.mouse.isDown("l") and not self.isDrawing then
+			self.startX = math.floor(camera:getMouseX() / 16)
+			self.startX = self.startX * 16
+			self.startY = math.floor(camera:getMouseY() / 16)
+			self.startY = self.startY * 16
+			self.isDrawing = true
+		end
+		if not love.mouse.isDown("l") and self.isDrawing then
+			self.endX = math.floor(camera:getMouseX() / 16)
+			self.endX = self.endX * 16
+			self.endY = math.floor(camera:getMouseY() / 16)
+			self.endY = self.endY * 16
+			self.isDrawing = false
+
+			local x, y, w, h
+			x = math.min(self.startX, self.endX)
+			y = math.min(self.startY, self.endY)
+			if x == self.startX then
+				w = self.endX - self.startX
+			else
+				w = self.startX - self.endX
+			end
+			if y == self.startY then
+				h = self.endY - self.startY
+			else
+				h = self.startY - self.endY
+			end
+
+			if w ~= 0 and h ~= 0 then
+				--self:fillTiles(x,y,w,h, self.selectedTile)
+				self:addCollisionBlock(x,y,w,h)
+			else
+				self:checkClick()
+			end
+		end
+	else
 		self.isDrawing = false
-
-		local x, y, w, h
-		x = math.min(self.startX, self.endX)
-		y = math.min(self.startY, self.endY)
-		if x == self.startX then
-			w = self.endX - self.startX
-		else
-			w = self.startX - self.endX
-		end
-		if y == self.startY then
-			h = self.endY - self.startY
-		else
-			h = self.startY - self.endY
-		end
-
-		if w ~= 0 and h ~= 0 then
-			self:fillTiles(x,y,w,h, self.selectedTile)
-			self:addCollisionBlock(x,y,w,h)
-		else
-			self:checkClick()
-		end
 	end
 
 	--Remove tiles
-	if love.mouse.isDown("r") then
+	if self.selectedTool == 3 and love.mouse.isDown("l") then
 		self:removeTile(math.floor(camera:getMouseX() / 16) * 16, math.floor(camera:getMouseY() / 16) * 16)
 	end
 
-	if love.mouse.isDown("m") then
+	if self.selectedTool == 4 and love.mouse.isDown("l") then
 		for i, v in ipairs(self.blocks) do
 			if camera:getMouseX() >= v.x and camera:getMouseX() <= v.x + v.w and camera:getMouseY() >= v.y and camera:getMouseY() <= v.y + v.h then
 				v.inDeletion = 1
@@ -119,7 +144,7 @@ function tileManager:update(dt)
 
 	for i = #self.blocks, 1, -1 do
 		local v = self.blocks[i]
-		if v.inDeletion == 1 and not love.mouse.isDown("m") then
+		if v.inDeletion == 1 and not love.mouse.isDown("l") then
 			self.world:remove(self.blocks[i])
 			table.remove(self.blocks, i)
 		end
@@ -134,8 +159,10 @@ function tileManager:checkClick()
 		if camera:getMouseX() >= v.x and camera:getMouseX() <= v.x + v.w and camera:getMouseY() >= v.y and camera:getMouseY() <= v.y + v.h then
 			self.selectedTile = v.id
 			v.s = .7
+			return true
 		end
 	end
+	return false
 end
 
 function tileManager:addButton(id)
@@ -276,9 +303,22 @@ function tileManager:draw()
 			love.graphics.draw(self.tileImage, v.quad, v.x, v.y)
 		end
 	end
+
+	--Draw the selected tile when in draw mode
+	if self.selectedTool == 1 then
+		local quad = love.graphics.newQuad(self.selectedTile * 16-16, 0, 16, 16, self.tileImage:getDimensions())
+		love.graphics.setColor(255,255,255,75)
+		local x, y
+		x =  math.floor(camera:getMouseX() / 16)
+		x = x * 16
+		y = math.floor(camera:getMouseY() / 16)
+		y = y * 16
+		love.graphics.draw(self.tileImage, quad, x, y)
+		love.graphics.setColor(255,255,255,255)
+	end
 		
 	--Draw the rectangle in making
-	if love.mouse.isDown("l") then
+	if self.selectedTool == 2 and love.mouse.isDown("l") then
 		love.graphics.setColor(0,0,255)
 		local ex = math.floor(camera:getMouseX() / 16)
 		ex = ex * 16
@@ -323,6 +363,10 @@ function tileManager:draw()
 	love.graphics.setColor(255,255,255)
 	self:drawButtons()
 
+	love.graphics.print("press 1 for tile draw", camera.x, camera.y + love.window.getHeight() / 2 * camera.scaleY ,0, .5, .5)
+	love.graphics.print("press 2 for collision draw", camera.x, camera.y + love.window.getHeight() / 2 * camera.scaleY+12, 0, .5, .5)
+	love.graphics.print("press 3 for tile removal", camera.x, camera.y + love.window.getHeight() / 2 * camera.scaleY + 24, 0, .5, .5)
+	love.graphics.print("press 4 for collision removal", camera.x, camera.y + love.window.getHeight() / 2 * camera.scaleY + 36, 0, .5, .5)
 end
 
 function tileManager:addCollisionBlock(x, y, w, h)
@@ -334,7 +378,7 @@ end
 function tileManager:addTile(x,y,id)
 	local quad = love.graphics.newQuad(id * 16 - 16, 0, 16, 16, self.tileImage:getDimensions())
 	local tile = {x=x,y=y, id=id, quad = quad}
-	--self:removeTile(x,y)
+	self:removeTile(x,y)
 	table.insert(self.tiles, tile)
 end
 
