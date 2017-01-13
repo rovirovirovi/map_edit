@@ -1,3 +1,12 @@
+[[
+#   map_edit
+#
+#   Copyright (C) 2016-2017 Rosca Valentin
+#
+#   This project is free software; you can redistribute it and/or modify it
+#   under the terms of the GNU v3 license. See LICENSE.md for details.
+]]
+
 require "camera"
 
 
