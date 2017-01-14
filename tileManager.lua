@@ -1,5 +1,11 @@
-require "camera"
+--[[
+	#   Copyright (C) 2017-2018 Rosca Valentin
+ 	#
+ 	#   This project is free software; you can redistribute it and/or modify it
+	#   under the terms of the MIT license. See LICENSE.md for more details.
+]]
 
+require "camera"
 
 tileManager = {}
 tileManager.__index = tileManager
@@ -16,7 +22,7 @@ function tileManager.create(world)
 	self.endX = 0
 	self.endY = 0
 	self.selectedTile = 1
-	self.tileImage = love.graphics.newImage("tile.png")
+	self.tileImage = love.graphics.newImage("tile.png") --Default tilesheet, can be changed using setTilesheetImage()
 	self.tileImage:setFilter("nearest", "nearest")
 	self.blocksToBeDeleted = {}
 	self.pressedSave = false
@@ -34,6 +40,7 @@ function tileManager.create(world)
 		tool 4 = remove collision
 	]]
 	self.selectedTool = 1 
+	self.newImage = nil
 
 	return self
 end
@@ -154,6 +161,26 @@ function tileManager:update(dt)
 	self:updateButtons(dt)
 end
 
+function tileManager:setTilesheetImage(pathToImage)
+
+	self.tileImage = nil
+	self.tileImage = love.graphics.newImage("tile.png")
+	
+	print(self.tileImage)
+	self:refreshQuads()
+end
+
+function tileManager:refreshQuads(tls, btn)
+	for i, v in ipairs(self.tiles) do
+		v.quad = nil
+		v.quad = love.graphics.newQuad(v.id * 16 - 16, 0, 16, 16, self.tileImage:getDimensions())
+	end
+	for i, v in ipairs(self.buttons) do
+		v.quad = nil
+		v.quad = love.graphics.newQuad(v.id * 16 - 16, 0, 16, 16, self.tileImage:getDimensions())
+	end
+end
+
 function tileManager:checkClick()
 	for i, v in ipairs(self.buttons) do
 		if camera:getMouseX() >= v.x and camera:getMouseX() <= v.x + v.w and camera:getMouseY() >= v.y and camera:getMouseY() <= v.y + v.h then
@@ -172,7 +199,9 @@ end
 
 function tileManager:drawButtons()
 	for i, v in ipairs(self.buttons) do
-		love.graphics.draw(self.tileImage, v.quad, v.x, v.y, 0, v.s, v.s)
+		if v.quad ~= nil and self.tileImage ~= nil then
+			love.graphics.draw(self.tileImage, v.quad, v.x, v.y, 0, v.s, v.s)
+		end
 	end
 end
 
@@ -245,7 +274,6 @@ function tileManager:loadTiles()
 	end
 	file:close()
 
-
 end
 
 function tileManager:loadCollisionBlocks()
@@ -295,6 +323,7 @@ end
 
 function tileManager:draw()
 
+	--Draw the backgrounds : TODO
 
 
 	--Draw the tiles
@@ -367,6 +396,8 @@ function tileManager:draw()
 	love.graphics.print("press 2 for collision draw", camera.x, camera.y + love.window.getHeight() / 2 * camera.scaleY+12, 0, .5, .5)
 	love.graphics.print("press 3 for tile removal", camera.x, camera.y + love.window.getHeight() / 2 * camera.scaleY + 24, 0, .5, .5)
 	love.graphics.print("press 4 for collision removal", camera.x, camera.y + love.window.getHeight() / 2 * camera.scaleY + 36, 0, .5, .5)
+	love.graphics.print("press 5 for background draw", camera.x, camera.y + love.window.getHeight() / 2 * camera.scaleY + 48, 0, .5, .5)
+	love.graphics.print("press 6 for background removal", camera.x, camera.y + love.window.getHeight() / 2 * camera.scaleY + 60, 0, .5, .5)
 end
 
 function tileManager:addCollisionBlock(x, y, w, h)
