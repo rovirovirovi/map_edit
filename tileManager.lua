@@ -170,7 +170,7 @@ function tileManager:setTilesheetImage(pathToImage)
 	self:refreshQuads()
 end
 
-function tileManager:refreshQuads(tls, btn)
+function tileManager:refreshQuads()
 	for i, v in ipairs(self.tiles) do
 		v.quad = nil
 		v.quad = love.graphics.newQuad(v.id * 16 - 16, 0, 16, 16, self.tileImage:getDimensions())
